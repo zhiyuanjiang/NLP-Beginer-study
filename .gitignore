@@ -1,0 +1,15 @@
+# 过滤data文件
+data/
+
+# 过滤.idea文件
+.idea/
+
+# 过滤test.py文件和fuck.py文件
+test.py
+fuck.py
+
+# 过滤点生成的txt文件
+*.txt
+
+# 过滤__pycache__
+__pycache__/
