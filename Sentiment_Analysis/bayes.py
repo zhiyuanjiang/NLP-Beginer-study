@@ -130,6 +130,10 @@ def kaggleTest(test_data_vec, pw, pc, filePath):
 if __name__ == "__main__":
     print("bayes algrithm")
     train_data, labels = loadDataSet("./data/train.tsv")
+    maxLen = 0
+    for it in train_data:
+        maxLen = max(maxLen, len(it))
+    print('the max len is : ', maxLen)
 
     train_x, test_x, train_y, test_y = data_split(train_data, labels, 0.1, 42)
     vocabList = createVocabList(train_x)
