@@ -66,7 +66,8 @@ def createVocabList(dataSet):
     print('create vocab list')
     for id, data in tqdm(enumerate(dataSet)):
         vocabList = vocabList|set(data)
-    return list(vocabList)
+    # return list(vocabList)
+    return vocabList
 
 def bagOfWord2Vec(vocabList, inputSet):
     # 获取文档向量，使用词袋模型（单词重复统计）

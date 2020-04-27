@@ -91,7 +91,8 @@ def loadWordEmbedding(vocab: Vocab):
         if vocab.id2word[i] in word2vec_map:
             weights[i, :] = torch.from_numpy(word2vec_map[vocab.id2word[i]])
 
-    embeddings = nn.Embedding.from_pretrained(weights)
+    # freeze=False, when update, fine-tune weights
+    embeddings = nn.Embedding.from_pretrained(weights, freeze=False)
 
     return embeddings
 
@@ -136,6 +137,6 @@ def createPreTrainVocab():
 
     vocab = word2vec_model.vocab.keys()
 
-    return list(vocab)
-
+    # return list(vocab)
+    return set(vocab)
 

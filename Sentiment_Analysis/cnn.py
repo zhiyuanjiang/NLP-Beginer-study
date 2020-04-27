@@ -16,14 +16,14 @@ from Sentiment_Analysis.pretendOF import Regularization
 import Sentiment_Analysis.utils
 import csv
 
-class sentiment_analysis_model(nn.Module):
+class CNN(nn.Module):
     """
     一个简单卷积神经网络。
     进行情感分类。
     """
     def __init__(self, embed_size, max_sent_len, vocabList, device):
 
-        super(sentiment_analysis_model, self).__init__()
+        super(CNN, self).__init__()
 
         self.max_sent_len = max_sent_len
         self.vocab = Vocab(vocabList)
@@ -32,9 +32,9 @@ class sentiment_analysis_model(nn.Module):
         self.feature = nn.Sequential(
             nn.Conv1d(embed_size, 64, 6),
             nn.ReLU(),
-            # nn.Dropout(0.2),
+            nn.Dropout(0.5),
             nn.Conv1d(64, 16, 6),
-            # nn.Dropout(0.5),
+            nn.Dropout(0.2),
             nn.ReLU(),
             nn.MaxPool1d(2, 2)
         )
@@ -69,7 +69,7 @@ def loss_func(output, target, reduction='mean'):
     return F.nll_loss(output, target, reduction=reduction)
 
 
-def train(model, device, train_data, labels, optimizer, epoch, batch, weight_decay=0.):
+def train(model, device, train_data, labels, optimizer, epoch, batch, weight_decay=0.1):
 
     log_every = 100
     if weight_decay > 0.:
@@ -135,13 +135,19 @@ if __name__ == "__main__":
     print("cnn algrithm")
 
     train_data, labels = loadDataSet("./data/train.tsv")
+    test_data, L = loadDataSet('./data/test.tsv', 1)
+
     train_x, test_x, train_y, test_y = data_split(train_data, labels, 0.1, 42)
     # 所有文件中最长的评论长度
     max_sent_len = 56
 
-    # vocabList = createVocabList(train_data)
+    # 只使用训练样本中出现的词
+    vocabListTrainData = createVocabList(train_data)
+    # 使用测试样本出现的词
+    vocabListTestData = createVocabList(test_data)
     # 使用词表中的所有词
-    vocabList = createPreTrainVocab()
+    # vocabListGlove = createPreTrainVocab()
+    vocabList = vocabListTrainData | vocabListTestData
 
     use_cuda = torch.cuda.is_available()
 
@@ -149,13 +155,13 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    model = sentiment_analysis_model(100, max_sent_len, vocabList, device).to(device)
+    model = CNN(100, max_sent_len, vocabList, device).to(device)
 
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
     flag = 0
     if flag == 0:
-        train(model, device, train_x, train_y, optimizer, 20, 64)
+        train(model, device, train_x, train_y, optimizer, 15, 64)
     else:
         model.load_state_dict(torch.load('./data/cnn_params.pth'))
 
