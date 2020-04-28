@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import sys
-sys.path.append('/home/yuan/nlp-beginer')
+sys.path.append('/home/zdf/fage/nlp-beginer')
 from Sentiment_Analysis.utils import loadWordEmbedding
 from Sentiment_Analysis.utils import pad_sents
 from Sentiment_Analysis.utils import Vocab

@@ -52,9 +52,10 @@ def pad_sents(sents, pad_token, max_sent_len):
     """
     sents_padded = copy.deepcopy(sents)
 
-    # max_len = 0
-    # for s in sents_padded:
-    #     max_len = max(len(s), max_len)
+    # 当max_sent_len = -1时，此时是RNN模型调用该函数，不需要提前确定最长的句子长度
+    if max_sent_len == -1:
+        for s in sents_padded:
+            max_sent_len = max(len(s), max_sent_len)
 
     for s in sents_padded:
         s.extend([pad_token]*(max_sent_len-len(s)))
@@ -72,14 +73,15 @@ def loadWordEmbedding(vocab: Vocab):
     from gensim.test.utils import datapath, get_tmpfile
     from gensim.models import KeyedVectors
     # 已有的glove词向量
-    #glove_file = datapath('f:/NLP-Beginner-study/Sentiment_Analysis/data/glove.6B.100d.txt')
-    glove_file = datapath('/home/yuan/nlp-beginer/Sentiment_Analysis/data/glove.6B.100d.txt')
+    # glove_file = datapath('f:/NLP-Beginner-study/Sentiment_Analysis/data/glove.6B.100d.txt')
+    glove_file = datapath('/home/zdf/fage/nlp-beginer/Sentiment_Analysis/data/glove.6B.100d.txt')
     # 指定转化为word2vec格式后文件的位置
     # tmp_file = get_tmpfile("f:/NLP-Beginner-study/Sentiment_Analysis/data/word2vec.6B.100d.txt")
-    tmp_file = get_tmpfile("/home/yuan/nlp-beginer/Sentiment_Analysis/data/word2vec.6B.100d.txt")
+    # tmp_file = get_tmpfile("/home/zdf/fage/nlp-beginer/Sentiment_Analysis/data/word2vec.6B.100d.txt")
     from gensim.scripts.glove2word2vec import glove2word2vec
-    glove2word2vec(glove_file, tmp_file)
+    # glove2word2vec(glove_file, tmp_file)
 
+    tmp_file = "/home/zdf/fage/nlp-beginer/Sentiment_Analysis/data/word2vec.6B.100d.txt"
     word2vec_model = KeyedVectors.load_word2vec_format(
         tmp_file, binary=False, encoding='utf-8')
     word2vec_map = {word: vector for word, vector in zip(word2vec_model.vocab, word2vec_model.vectors)}
@@ -112,6 +114,18 @@ def batch_iter(data, labels, batch_size, shuffle=False):
 
         yield new_data, new_labels
 
+def batch_iter_test(data, batch_size):
+
+    batch_num = math.ceil(len(data)/batch_size)
+    index_array = list(range(len(data)))
+
+    for i in range(batch_num):
+
+        indices = index_array[i*batch_size: (i+1)*batch_size]
+        new_data = [data[idx] for idx in indices]
+
+        yield new_data
+
 
 def createPreTrainVocab():
     """
@@ -122,11 +136,11 @@ def createPreTrainVocab():
     from gensim.models import KeyedVectors
 
     # 已有的glove词向量
-    # glove_file = datapath('f:/NLP-Beginner-study/Sentiment_Analysis/data/glove.6B.100d.txt')
-    glove_file = datapath('/home/yuan/nlp-beginer/Sentiment_Analysis/data/glove.6B.100d.txt')
+    glove_file = datapath('f:/NLP-Beginner-study/Sentiment_Analysis/data/glove.6B.100d.txt')
+    # glove_file = datapath('/home/yuan/nlp-beginer/Sentiment_Analysis/data/glove.6B.100d.txt')
     # 指定转化为word2vec格式后文件的位置
-    # tmp_file = get_tmpfile("f:/NLP-Beginner-study/Sentiment_Analysis/data/word2vec.6B.100d.txt")
-    tmp_file = get_tmpfile("/home/yuan/nlp-beginer/Sentiment_Analysis/data/word2vec.6B.100d.txt")
+    tmp_file = get_tmpfile("f:/NLP-Beginner-study/Sentiment_Analysis/data/word2vec.6B.100d.txt")
+    # tmp_file = get_tmpfile("/home/yuan/nlp-beginer/Sentiment_Analysis/data/word2vec.6B.100d.txt")
     from gensim.scripts.glove2word2vec import glove2word2vec
 
     glove2word2vec(glove_file, tmp_file)
