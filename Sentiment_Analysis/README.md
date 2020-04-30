@@ -4,6 +4,8 @@ https://www.kaggle.com/c/sentiment-analysis-on-movie-reviews/overview
 
 参考：
 * Convolutional Neural Networks for Sentence Classification
+* cs224n ppt
+* 
 
 1.bayes algorithm
 
@@ -15,7 +17,9 @@ https://www.kaggle.com/c/sentiment-analysis-on-movie-reviews/overview
 
 这里再用词向量试一下？
 
-3.cnn
+3.cnn模型
+
+![Alt text](./img/cnn_model.png)
 
 * 单写了一层卷积层和一个最大池化层，使用glove，效果不错。（0.597）
 
@@ -36,6 +40,14 @@ L2正则化，效果都不理想。（0.615）
 * 又xjb弄了几层dropout，搞了个L2正则化，epoch=15（减少了训练次数），竟然避免了过拟合，准确度达到了0.637。
 哈哈，调不动了。
 
-4.rnn
-* 速度有点慢
+
+
+4.rnn模型
+
+![Alt text](./img/rnn_model.png)
+
+* 速度有点慢，模型双向lstm，average pooling，full connection。
 * 用了gpu后，速度起飞。以后有时间再调试吧。
+* lr = 0.1, weight_decay = 0.1, epoch = 32。 过拟合。（0.631）
+* 最好调到了0.649，溜了溜了。
+

@@ -15,6 +15,7 @@ from Sentiment_Analysis.bayes import loadDataSet
 from Sentiment_Analysis.bayes import data_split
 from Sentiment_Analysis.bayes import createVocabList
 from Sentiment_Analysis.utils import batch_iter_test
+from Sentiment_Analysis.utils import loss_curve
 
 class RNN(nn.Module):
 
@@ -29,6 +30,8 @@ class RNN(nn.Module):
 
         self.lstm = nn.LSTM(embed_size, hidden_size, bidirectional=True)
         self.classify = nn.Linear(2*hidden_size, 5)
+        self.drop = nn.Dropout(0.8)
+        self.activate = nn.ReLU()
         self.h_0 = None
         self.c_0 = None
         self.h_n = None
@@ -42,10 +45,18 @@ class RNN(nn.Module):
         x = self.model_embeddings(x)
 
         x = x.permute(1, 0, 2)   # (seq_len, batch, input_size)
+        # rnn, lstm
         x, (self.h_n, self.c_n) = self.lstm(x, (self.h_0, self.c_0)) # x: (seq_len, batch, num_direction*hidden_size)
-        x = x.permute(1, 2, 0)
+        x = self.activate(x)
+        x = x.permute(1, 2, 0) # x: (batch, num_direction*hidden_size, seq_len)
         seq_len = x.shape[0]
-        x = 1./seq_len*torch.sum(x, dim=2)
+        # average pooling
+        # x = 1./seq_len*torch.sum(x, dim=2)
+        # max pooling
+        x = torch.max(x, dim=2)[0]
+        # dropout prevent overfitting
+        x = self.drop(x)
+        # fulling connection
         x = self.classify(x)
         return F.log_softmax(x, dim=1)
 
@@ -59,6 +70,7 @@ def train(model, device, train_data, labels, optimizer, epoch, batch, weight_dec
         reg_loss = Regularization(model, batch, weight_decay, p=2)
     # set the model to training model
     model.train()
+    loss_data = []
     for idx in range(epoch):
         train_iter = 0
         for data, target in batch_iter(train_data, labels, batch, True):
@@ -78,12 +90,15 @@ def train(model, device, train_data, labels, optimizer, epoch, batch, weight_dec
             # update parameters
             optimizer.step()
 
+            if train_iter == 0:
+                loss_data.append(loss.item())
             if train_iter % log_every == 0:
                 print("the {} epoch, the {} iter, loss is : {}".format(idx, train_iter, loss.item()))
 
             train_iter += 1
 
-    # torch.save(model.state_dict(), './data/rnn_params1.pth')
+    loss_curve(loss_data)
+    # torch.save(model.state_dict(), './data/rnn_params.pth')
 
 def test(model, device, test_data, labels):
     model.eval()
@@ -148,7 +163,7 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
 
     batch = 64
-    epoch = 24
+    epoch = 32
     embed_size = 100
     hidden_size = 50
 
@@ -159,7 +174,7 @@ def main():
     flag = 0
     if flag == 0:
         s = time.time()
-        train(model, device, train_x, train_y, optimizer, epoch, batch)
+        train(model, device, train_x, train_y, optimizer, epoch, batch, 0.2)
         e = time.time()
         print("train time is : ", (e-s)/60.)
     else:

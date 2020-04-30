@@ -3,6 +3,9 @@ import torch
 from torch import nn
 import numpy as np
 import math
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
 
 class Vocab(object):
 
@@ -154,3 +157,8 @@ def createPreTrainVocab():
     # return list(vocab)
     return set(vocab)
 
+def loss_curve(loss_data):
+    x = list(range(len(loss_data)))
+    plt.plot(x, loss_data, marker='*')
+    # plt.show()
+    plt.savefig('./img/rnn.jpg')
