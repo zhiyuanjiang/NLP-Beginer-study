@@ -15,6 +15,8 @@ class Vocab(object):
         self.word2id['<unk>'] = 0
         self.id2word = {i + 1: word for i, word in enumerate(vocabList)}
         self.id2word[0] = '<unk>'
+        self.pad_word = '<unk>'
+        self.pad_id = 0
         self.len = len(vocabList)
 
     def getWordId(self, word):
@@ -66,7 +68,7 @@ def pad_sents(sents, pad_token, max_sent_len):
     return sents_padded
 
 
-def loadWordEmbedding(vocab: Vocab):
+def loadWordEmbedding(vocab: Vocab, freeze=True):
     """
     加载预训练好的词向量
     :return:
@@ -97,14 +99,14 @@ def loadWordEmbedding(vocab: Vocab):
             weights[i, :] = torch.from_numpy(word2vec_map[vocab.id2word[i]])
 
     # freeze=False, when update, fine-tune weights
-    embeddings = nn.Embedding.from_pretrained(weights, freeze=False)
+    embeddings = nn.Embedding.from_pretrained(weights, freeze=freeze)
 
     return embeddings
 
-def batch_iter(data, labels, batch_size, shuffle=False):
+def batch_iter(pdata, hdata, labels, batch_size, shuffle=False):
 
-    batch_num = math.ceil(len(data) / batch_size)
-    index_array = list(range(len(data)))
+    batch_num = math.ceil(len(labels) / batch_size)
+    index_array = list(range(len(labels)))
 
     if shuffle:
         np.random.shuffle(index_array)
@@ -112,10 +114,11 @@ def batch_iter(data, labels, batch_size, shuffle=False):
     for i in range(batch_num):
 
         indices = index_array[i * batch_size: (i + 1) * batch_size]
-        new_data = [data[idx] for idx in indices]
+        new_pdata = [pdata[idx] for idx in indices]
+        new_hdata = [hdata[idx] for idx in indices]
         new_labels = [labels[idx] for idx in indices]
 
-        yield new_data, new_labels
+        yield new_pdata, new_hdata, new_labels
 
 def batch_iter_test(data, batch_size):
 
@@ -161,4 +164,4 @@ def loss_curve(loss_data):
     x = list(range(len(loss_data)))
     plt.plot(x, loss_data, marker='*')
     # plt.show()
-    plt.savefig('./img/rnn.jpg')
+    plt.savefig('./img/rnn.png')
