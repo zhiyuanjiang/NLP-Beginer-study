@@ -163,6 +163,7 @@ if __name__ == "__main__":
     if flag == 0:
         train(model, device, train_x, train_y, optimizer, 15, 64)
     else:
+        # 貌似这个要放在优化器前面
         model.load_state_dict(torch.load('./data/cnn_params.pth'))
 
     test(model, device, train_x, train_y)

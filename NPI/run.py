@@ -135,12 +135,12 @@ def main():
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     batch = 64
-    epoch = 15
+    epoch = 48
     embed_size = 100
     hidden_size = 100
 
     model = RNN(embed_size, hidden_size, vocabList, device).to(device)
-    optimizer = optim.SGD(model.parameters(), lr=0.15, momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 
     s = time.time()
     train(premise, hypothesis, labels, model, optimizer, epoch, batch, device)
