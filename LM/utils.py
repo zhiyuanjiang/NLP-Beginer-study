@@ -8,54 +8,47 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import re
+import jieba
 
-"""
-'I-MISC', 'B-MISC', 'I-LOC', 'B-LOC', 'I-ORG', 'B-ORG', 'I-PER', 'O'
-'START' : 0
-'I-MISC': 1
-'B-MISC': 2
-'I-LOC' : 3
-'B-LOC' : 4
-'I-ORG' : 5
-'B-ORG' : 6
-'I-PER' : 7
-'O'     : 8
-'END'   : 9
-"""
 
-def loadData(filepath):
+def loadRawData(filepath):
     """
     load data
     :param filepath:
     :return:
         data - List[List[str]]
-        labels - List[List[str]]
     """
-    with open(filepath, 'r') as f:
+    with open(filepath, 'rb') as f:
         reader = f.readlines()
         cnt = 0
-        data, labels = [], []
-        sents, name = [], []
-        print("load train data")
-        for it in tqdm(reader):
-            if cnt == 0 or cnt == 1:
+        data = []
+        poetry = ""
+        for sent in tqdm(reader):
+            if cnt == 0:
                 cnt += 1
                 continue
-            if it == '\n':
-                if len(sents) != 0:
-                    data.append(copy.copy(sents))
-                    labels.append(copy.copy(name))
-                    sents.clear()
-                    name.clear()
+
+            if sent == b'\r\n':
                 continue
-            sp = it.split()
+                # data.append(copy.copy(poetry))
+                # poetry = ""
+                # continue
+            ss = str(sent, encoding='utf-8')
+            ss = ss[:-2]
+            # ss = re.subn("[{}]+".format("。，！"), "", ss)[0]
+            # poetry += ss
+            data.append(ss)
+    return data
 
-            tmp = sp[0].lower()
-            if tmp[0] >= 'a' and tmp[0] <= 'z':
-                sents.append(tmp)
-                name.append(sp[3])
-
-    return data, labels
+def processRawData(rawdata):
+    data = []
+    for sent in rawdata:
+        s = "/".join(jieba.cut(sent, cut_all=False))
+        data.append(s.split('/'))
+    punction = "。，！；"
+    data = [[word for word in sent if word not in punction] for sent in data]
+    return data
 
 def loadEmbeddings(vocab:Vocab, embed_size, filepath):
     """
@@ -80,16 +73,11 @@ def loadEmbeddings(vocab:Vocab, embed_size, filepath):
             word.append(vocab.id2word[i])
             cnt += 1
 
-    # print('the amount of vocab is : ', vocab.len)
-    # print('the amount of oov is : ', cnt)
-    # print(word)
-    # exit(-1)
-
     embeddings = nn.Embedding.from_pretrained(weights)
 
     return embeddings
 
-def batch_iter(data, labels, batch_size, shuffle=False):
+def batch_iter(data, batch_size, shuffle=False):
 
     batch_num = math.ceil(len(data) / batch_size)
     index_array = list(range(len(data)))
@@ -101,23 +89,20 @@ def batch_iter(data, labels, batch_size, shuffle=False):
 
         indices = index_array[i * batch_size: (i + 1) * batch_size]
         new_data = [data[idx] for idx in indices]
-        new_labels = [labels[idx] for idx in indices]
 
-        yield new_data, new_labels
+        yield new_data
 
-def data_split(data, labels, test_size, random_state):
+def data_split(data, test_size, random_state):
     # split data
     from sklearn.model_selection import train_test_split
-    m = len(labels)
+    m = len(data)
     X = [i for i in range(m)]
     train_index,  test_index = train_test_split(X, test_size=test_size, random_state=random_state)
 
     train_x = [data[i] for i in train_index]
-    train_y = [labels[i] for i in train_index]
     test_x = [data[i] for i in test_index]
-    test_y = [labels[i] for i in test_index]
 
-    return train_x, test_x, train_y, test_y
+    return train_x, test_x
 
 def loss_curve(loss_data):
     import matplotlib as mpl
@@ -135,18 +120,9 @@ def test_word2vec():
 
 
 if __name__ == '__main__':
-    train_data_path = './data/conll2003/eng.train'
-    data, labels = loadData(train_data_path)
-    # print('the size of data: {}, the size of labels: {}'.format(len(data), len(labels)))
-    # print(data[:5])
-    # print(labels[:5])
-    # name = set()
-    # for it in labels:
-    #     name = name | set(it)
-    # print(name)
-    name = [0]*10
-    for id, sent in enumerate(labels):
-        if 'B-MISC' in sent:
-            print(sent)
-            print(data[id])
-
+    print('test')
+    rawdata = loadRawData('./data/poetryFromTang.txt')
+    data = processRawData(rawdata)
+    for i in range(len(data)):
+        print(data[i])
+    print(len(data))

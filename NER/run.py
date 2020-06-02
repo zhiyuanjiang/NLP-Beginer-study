@@ -20,8 +20,8 @@ def train(train_data, train_labels, test_data, test_labels,
           model, optimizer, device, epoch, batch, params_path, corate=-1):
     model.train()
 
-    log_every = 100
-    save_iter = 1200
+    log_every = 10
+    save_iter = 120
 
     embeddings = loadEmbeddings(model.vocab, model.embed_size,
                                 './data/word2vec.6B.100d.txt')
@@ -34,25 +34,34 @@ def train(train_data, train_labels, test_data, test_labels,
         train_iter = 0
 
         for train_x, train_y in batch_iter(train_data, train_labels, batch):
-            train_x = model.vocab.to_input_tensor(train_x)
-            train_x = embeddings(train_x).to(device)
-            train_y = torch.tensor(train_y, device=device)
 
             optimizer.zero_grad()
-            loss = model(train_x, train_y)
-            loss.backward()
+
+            sum_loss = torch.zeros(1,).to(device)
+            m = len(train_y)
+            for idx in range(m):
+
+                x = model.vocab.to_input_tensor([train_x[idx]])
+                x = embeddings(x).to(device)
+                y = torch.tensor([train_y[idx]], device=device)
+
+                loss = model(x, y)
+                sum_loss = sum_loss+loss
+
+            sum_loss = 1./m*sum_loss
+            sum_loss.backward()
             optimizer.step()
 
             if train_iter == 0:
-                loss_data.append(loss.item())
+                loss_data.append(sum_loss.item())
             if train_iter % log_every == 0:
                 e = time.time()
                 print("the {} epoch, the {} iter, loss is : {} [time is : {}]".format(times,
-                                                                                      train_iter, loss.item(), (e-s)/60.))
+                                                                                      train_iter, sum_loss.item(), (e-s)/60.))
 
             if train_iter == save_iter:
                 # auto save params
-                correct_rate = test(test_data, test_labels, model, device, training=1)
+                correct_rate = test(test_data, test_labels, model, device, training=1, embeddings=embeddings)
                 if correct_rate > max(hint_correct_rate):
                     checkpoint = {
                         'model_dict': model.state_dict(),
@@ -72,15 +81,17 @@ def train(train_data, train_labels, test_data, test_labels,
     state = torch.load(params_path)
     model.load_state_dict(state['model_dict'])
 
-def test(test_data, labels, model, device, batch=1, training=0):
+def test(test_data, labels, model, device, batch=1, training=0, embeddings=None):
     model.eval()
 
-    embeddings = loadEmbeddings(model.vocab, model.embed_size,
+    if embeddings == None:
+        embeddings = loadEmbeddings(model.vocab, model.embed_size,
                                 './data/word2vec.6B.100d.txt')
 
     count, correct_count = 0, 0
     with torch.no_grad():
         for test_x, test_y in batch_iter(test_data, labels, batch):
+
             test_x = model.vocab.to_input_tensor(test_x)
             test_x = embeddings(test_x).to(device)
 
@@ -118,20 +129,21 @@ def main():
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    batch = 1
+    batch = 32
     epoch = 4
     embed_size = 100
-    hidden_size = 9
+    hidden_size = 50
     flag_load_model = 1
+    n_label = len(name2id)
     corate = -1
 
-    model = RNN(embed_size, hidden_size, vocabList, device).to(device)
+    model = RNN(embed_size, hidden_size, n_label, vocabList, device).to(device)
     if flag_load_model:
         checkpoint = torch.load(params_path)
         model.load_state_dict(checkpoint['model_dict'])
         corate = checkpoint['corate']
 
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
 
     for key, value in model.named_parameters():
@@ -139,8 +151,11 @@ def main():
 
     train(train_x, train_y, test_x, test_y,
           model, optimizer, device, epoch, batch, params_path, corate=corate)
-
     print(model.transition)
+
+    # test_x = test_x[:5]
+    # test_y = test_y[:5]
+    test(test_x, test_y, model, device)
 
 if __name__ == "__main__":
     main()

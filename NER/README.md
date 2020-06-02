@@ -8,6 +8,11 @@ loss = Ps-Pr，理论上是不可能的，因为Pr不可能比Ps大，但因为�
 solution:
 exp(Z)-max(Z), 最后再补上去，balabala....
 
+我tm貌似又全拟合了一个特征，输出清一色8,8,8,8...
+
+输入没处理好，很难拟合，要进行文本清洗，全部变成小写字符，把标点全部去掉。
+
+mmp，没事没有一点变化。
 
 参考：
 * https://github.com/createmomo/CRF-Layer-on-the-Top-of-BiLSTM
