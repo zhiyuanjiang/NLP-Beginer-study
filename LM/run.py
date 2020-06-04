@@ -19,8 +19,9 @@ def createVocabList(data):
     vocabList = sorted(vocabList.keys())
     return vocabList
 
-def loss_function(output, target, reduction='mean'):
-    return F.nll_loss(output, target, reduction=reduction)
+def loss_function(output, target, weight, reduction='mean'):
+
+    return F.nll_loss(output, target, weight=weight, reduction=reduction)
 
 def train(train_data, test_data, model, optimizer, device, config, Hp):
     model.train()
@@ -33,19 +34,24 @@ def train(train_data, test_data, model, optimizer, device, config, Hp):
 
     hint_hp = [Hp]
 
+    weight = torch.ones(model.vocab.len, ).to(device)
+    # weight[model.vocab.end_token_id] = 0.01
+    # weight[model.vocab.pad_token_id] = 0.01
+
     for times in range(config.epoch):
         train_iter = 0
 
         for ndata in batch_iter(train_data, config.batch):
 
-            ndata = [[model.vocab.start_token]+sent+[model.vocab.end_token] for sent in ndata]
+            # ndata = [[model.vocab.start_token]+sent+[model.vocab.end_token] for sent in ndata]
             ndata = model.vocab.to_input_tensor(ndata).to(device)
             train_x = ndata[:, :-1]
             train_y = ndata[:, 1:]
+
             optimizer.zero_grad()
             output = model(train_x)
 
-            loss = loss_function(output, train_y)
+            loss = loss_function(output, train_y, weight)
             loss.backward()
             optimizer.step()
 
@@ -58,7 +64,7 @@ def train(train_data, test_data, model, optimizer, device, config, Hp):
 
             if train_iter == save_iter:
                 # auto save params
-                Hp = test(test_data, model, device, config, training=1)
+                Hp = test(test_data, model, device, weight, training=1)
                 if Hp < min(hint_hp):
                     checkpoint = {
                         'model_dict': model.state_dict(),
@@ -78,26 +84,27 @@ def train(train_data, test_data, model, optimizer, device, config, Hp):
     state = torch.load(config.params_path)
     model.load_state_dict(state['model_dict'])
 
-def test(test_data, model, device, config, training=0):
+def test(test_data, model, device, weight, training=0):
     # use the perplexity as a evaluation indicator
     model.eval()
     count, correct_count = 0, 0
     Hp = 0.
     with torch.no_grad():
-        for ndata in batch_iter(test_data, config.batch):
+        for ndata in batch_iter(test_data, 1):
 
-            ndata = [[model.vocab.start_token] + sent + [model.vocab.end_token] for sent in ndata]
+            # ndata = [[model.vocab.start_token] + sent + [model.vocab.end_token] for sent in ndata]
             ndata = model.vocab.to_input_tensor(ndata).to(device)
             test_x = ndata[:, :-1]
             test_y = ndata[:, 1:]
             output = model(test_x)
 
-            Hp = Hp + loss_function(output, test_y, reduction='sum').item()
-
+            loss = loss_function(output, test_y, weight).item()
+            Hp = Hp + loss
 
         m = len(test_data)
-        Hp = 1./m*Hp
-        # Hp = math.pow(2, 1./m*Hp)
+
+        # Hp = 1./m*Hp
+        Hp = math.pow(math.e, 1./m*Hp)
         print('the perplexity is : ', Hp)
 
     if training:

@@ -43,10 +43,12 @@ def loadRawData(filepath):
 
 def processRawData(rawdata):
     data = []
+    # for sent in rawdata:
+    #     s = "/".join(jieba.cut(sent, cut_all=False))
+    #     data.append(s.split('/'))
     for sent in rawdata:
-        s = "/".join(jieba.cut(sent, cut_all=False))
-        data.append(s.split('/'))
-    punction = "。，！；"
+        data.append(list(map(str, sent)))
+    punction = "。，！；5HORabcekrz "
     data = [[word for word in sent if word not in punction] for sent in data]
     return data
 
@@ -61,7 +63,7 @@ def loadEmbeddings(vocab:Vocab, embed_size, filepath):
     w2v_model = KeyedVectors.load_word2vec_format(filepath, binary=False)
     # w2v_dict  = {word:vector for word,vector in zip(w2v_model.vocab, w2v_model.vectors)}
 
-    vocab_size = vocab.len+1
+    vocab_size = vocab.len
     weights = torch.zeros(vocab_size, embed_size)
 
     word = []
@@ -73,7 +75,7 @@ def loadEmbeddings(vocab:Vocab, embed_size, filepath):
             word.append(vocab.id2word[i])
             cnt += 1
 
-    embeddings = nn.Embedding.from_pretrained(weights)
+    embeddings = nn.Embedding.from_pretrained(weights, freeze=False)
 
     return embeddings
 

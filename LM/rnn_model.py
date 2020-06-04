@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from Vocab import  Vocab
+from utils import loadEmbeddings
 
 class PoetryModel(nn.Module):
     """
@@ -18,6 +19,7 @@ class PoetryModel(nn.Module):
         self.embeddings = nn.Embedding(self.vocab.len, embed_size)
         self.lstm = nn.LSTMCell(embed_size, hidden_size)
         self.classify = nn.Linear(hidden_size, self.vocab.len)
+        self.activate = nn.ReLU()
 
     def forward(self, inputs):
         """
@@ -26,18 +28,19 @@ class PoetryModel(nn.Module):
         """
         x = self.embeddings(inputs) # tensor (batch, seq_len, embed_size)
 
-        m = x.shape[0]
+        m = x.shape[0] # batch
         hidden_state = []
         h_i = torch.zeros(m, self.hidden_size).to(self.device)
         c_i = torch.zeros(m, self.hidden_size).to(self.device)
         for x_i in torch.split(x, 1, dim=1):
-            x_i = x_i.squeeze(1)
+            x_i = x_i.squeeze(1)  # (batch, embed_size)
             h_i, c_i = self.lstm(x_i, (h_i, c_i))    # (batch, hidden_size)
             hidden_state.append(h_i)
 
         hidden_state = torch.stack(hidden_state, dim=1)  # (batch, seq_len, hidden_size)
         y = self.classify(hidden_state)
-        y = y.permute(0, 2, 1)  # (batch, hidden_size, seq_len)
+        y = y.permute(0, 2, 1)  # (batch, vocab_len, seq_len)
+        y = self.activate(y)
         y = F.log_softmax(y, dim=1)
 
         return y
@@ -45,7 +48,7 @@ class PoetryModel(nn.Module):
     def generate_poetry(self, max_len):
 
         x_i = self.vocab.start_token_id
-        # x_i = 8
+        # x_i = 34
         x_i = self.embeddings(torch.tensor([x_i]))
         h_i = torch.zeros(1, self.hidden_size).to(self.device)
         c_i = torch.zeros(1, self.hidden_size).to(self.device)

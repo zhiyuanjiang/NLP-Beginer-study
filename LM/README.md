@@ -15,6 +15,20 @@ mmp，Hp overflow，光看loss感觉还行，但是生成的句子都是<pad><pa
 
 fuck fuck fuck
 
+给不同的类别添加不同的权重，<END>，<PAD>添加较小的权重
+此时模型基本不收敛，之前模型收敛的基本上是关于<END>和<PAD>的？
+
+训练一个词向量试试
+都木有用
+
+当我去掉所有的<START><END><PAD>的时候，模型收敛了。
+其他词的频率实在是太低了，对于每个句子最后一个词总会是<END>，存在大量的输入词，预测输出词<END>，
+导致训练之后无论输入什么词都会输出<END>，我猜是这样的。
+调大embed_size和hidden_size加速收敛。
+
+train_data收敛了，但是dev_data没什么变化，说明过拟合？
+
+
 参考：
 * https://github.com/Alic-yuan/nlp-beginner-finish/tree/master/task5
 * cs224n hw
