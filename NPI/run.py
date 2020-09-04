@@ -8,9 +8,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 import sys
 sys.path.append('/home/zdf/fage/nlp-beginer')
-from NPI.rnn_model import RNN
-from NPI.utils import loss_curve
-from NPI.utils import batch_iter
+from rnn_model import RNN
+from utils import loss_curve
+from utils import batch_iter
 
 """
 # neutral: 0
@@ -124,9 +124,6 @@ def main():
 
     labels, premise, hypothesis = loadData(train_data_path)
     dev_labels, dev_premise, dev_hypothesis = loadData(dev_data_path)
-
-    # vocabList = createVocabList(premise) | createVocabList(hypothesis)
-    # saveVocabList(vocab_path, vocabList)
 
     vocabList = readVocabList(vocab_path)
     print(len(vocabList))

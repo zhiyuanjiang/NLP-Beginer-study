@@ -4,8 +4,8 @@ import torch.nn.functional as F
 from typing import List, Tuple, Dict, Set, Union
 import sys
 sys.path.append('/home/zdf/fage/nlp-beginer')
-from NPI.utils import Vocab
-from NPI.utils import loadWordEmbedding
+from utils import Vocab
+from utils import loadWordEmbedding
 
 class RNN(nn.Module):
     """
