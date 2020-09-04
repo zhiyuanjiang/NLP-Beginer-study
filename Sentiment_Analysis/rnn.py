@@ -5,17 +5,17 @@ import torch.optim as optim
 import csv
 import sys
 import time
-sys.path.append('/home/zdf/fage/nlp-beginer')
-sys.path.append('f:/NLP-Beginner-study')
-from Sentiment_Analysis.utils import Vocab
-from Sentiment_Analysis.pretendOF import Regularization
-from Sentiment_Analysis.utils import loadWordEmbedding
-from Sentiment_Analysis.utils import batch_iter
-from Sentiment_Analysis.bayes import loadDataSet
-from Sentiment_Analysis.bayes import data_split
-from Sentiment_Analysis.bayes import createVocabList
-from Sentiment_Analysis.utils import batch_iter_test
-from Sentiment_Analysis.utils import loss_curve
+# sys.path.append('/home/zdf/fage/nlp-beginer')
+# sys.path.append('f:/NLP-Beginner-study')
+from utils import Vocab
+from pretendOF import Regularization
+from utils import loadWordEmbedding
+from utils import batch_iter
+from utils import loadDataSet
+from utils import data_split
+from utils import createVocabList
+from utils import batch_iter_test
+from utils import loss_curve
 
 class RNN(nn.Module):
 
@@ -32,26 +32,17 @@ class RNN(nn.Module):
         self.classify = nn.Linear(2*hidden_size, 5)
         self.drop = nn.Dropout(0.8)
         self.activate = nn.ReLU()
-        self.h_0 = None
-        self.c_0 = None
-        self.h_n = None
-        self.c_n = None
 
     def forward(self, data):
-        batch = len(data)
         x = self.vocab.to_input_tensor(data, self.device, -1)
-        self.h_0 = torch.zeros(2, batch, self.hidden_size, device=self.device)
-        self.c_0 = torch.zeros(2, batch, self.hidden_size, device=self.device)
         x = self.model_embeddings(x)
 
         x = x.permute(1, 0, 2)   # (seq_len, batch, input_size)
         # rnn, lstm
-        x, (self.h_n, self.c_n) = self.lstm(x, (self.h_0, self.c_0)) # x: (seq_len, batch, num_direction*hidden_size)
+        x, (_, _) = self.lstm(x) # x: (seq_len, batch, num_direction*hidden_size)
         x = self.activate(x)
         x = x.permute(1, 2, 0) # x: (batch, num_direction*hidden_size, seq_len)
-        seq_len = x.shape[0]
-        # average pooling
-        # x = 1./seq_len*torch.sum(x, dim=2)
+
         # max pooling
         x = torch.max(x, dim=2)[0]
         # dropout prevent overfitting
@@ -98,7 +89,7 @@ def train(model, device, train_data, labels, optimizer, epoch, batch, weight_dec
             train_iter += 1
 
     loss_curve(loss_data)
-    # torch.save(model.state_dict(), './data/rnn_params.pth')
+    torch.save(model.state_dict(), './data/rnn_params.pth')
 
 def test(model, device, test_data, labels):
     model.eval()
@@ -142,7 +133,7 @@ def kaggleTest(model, filePath):
 def main():
     print("rnn algorithm")
     train_data, labels = loadDataSet("./data/train.tsv")
-    test_data, L = loadDataSet('./data/test.tsv', 1)
+    test_data, _ = loadDataSet('./data/test.tsv', 1)
 
     train_x, test_x, train_y, test_y = data_split(train_data, labels, 0.1, 42)
     # 所有文件中最长的评论长度
@@ -153,8 +144,10 @@ def main():
     # 使用测试样本出现的词
     vocabListTestData = createVocabList(test_data)
     # 使用词表中的所有词
-    # vocabListGlove = createPreTrainVocab()
+    # 这里犯了一个很大的错误， 只使用了一个 或运算 来获取vocabList
+    # set是使用散列表实现的，是无序的，所以每次重新运行代码，最终得到的embedding都是不一样的。
     vocabList = vocabListTrainData | vocabListTestData
+    vocabList = sorted(vocabList)
 
     use_cuda = torch.cuda.is_available()
 
@@ -178,7 +171,7 @@ def main():
         e = time.time()
         print("train time is : ", (e-s)/60.)
     else:
-        model.load_state_dict(torch.load('./data/cnn_params.pth'))
+        model.load_state_dict(torch.load('./data/rnn_params.pth'))
 
     test(model, device, train_x, train_y)
     test(model, device, test_x, test_y)

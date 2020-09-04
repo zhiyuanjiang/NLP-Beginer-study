@@ -6,6 +6,62 @@ import math
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from tqdm import tqdm
+import csv
+
+def textParse(text):
+    # 去除text中的标点，将所有大写字符变成小写字符，分割成单词
+    # punctuation = '!,;:.?'
+    # text = re.sub('[{}]+'.format(punctuation), ' ', text)
+    return text.lower().split()
+
+def loadDataSet(filePath, tick=0):
+    """
+    加载数据
+    :param filePath: 文件路径
+    :param tick: tick=0 读取train.tsv, tick=1 读取test.tsv
+    :return:
+        train_data - list[list[str]], 每个单词都是一个特征
+        labels - list[int], 标签
+    """
+    with open(filePath, 'r') as f:
+        data = csv.reader(f, delimiter='\t')
+        flag = 0
+        train_data = []
+        labels = []
+        # index = set() # 统计最原始的长句，划分后的phrase暂时不统计
+        for it in data:
+            if flag == 0:
+                flag += 1
+                continue
+            # if it[1] in index:
+            #     continue
+            # index.add(it[1])
+            if tick == 0:
+                labels.append(int(it[3]))
+            train_data.append(textParse(it[2]))
+    return train_data, labels
+
+def data_split(data, labels, test_size, random_state):
+    # 将data划分为train data and test data, 划分下标
+    m = len(labels)
+    X = [i for i in range(m)]
+    train_index,  test_index = train_test_split(X, test_size=test_size, random_state=random_state)
+    train_x = [data[i] for i in train_index]
+    train_y = [labels[i] for i in train_index]
+    test_x = [data[i] for i in test_index]
+    test_y = [labels[i] for i in test_index]
+    return train_x, test_x, train_y, test_y
+
+def createVocabList(dataSet):
+    # 使用train data创建一个词表，所有的特征
+    vocabList = set() # 词表
+    print('create vocab list')
+    for id, data in tqdm(enumerate(dataSet)):
+        vocabList = vocabList|set(data)
+    # return list(vocabList)
+    return vocabList
 
 class Vocab(object):
 
@@ -28,7 +84,7 @@ class Vocab(object):
             return [[self.getWordId(w) for w in s] for s in sents]
         else:
             return [self.getWordId(w) for w in sents]
-
+    
     def to_input_tensor(self, sents, device, max_sent_len):
         """
         将sents转换成tensor

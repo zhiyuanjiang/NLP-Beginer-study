@@ -3,17 +3,17 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import sys
-sys.path.append('/home/zdf/fage/nlp-beginer')
-from Sentiment_Analysis.utils import loadWordEmbedding
-from Sentiment_Analysis.utils import pad_sents
-from Sentiment_Analysis.utils import Vocab
-from Sentiment_Analysis.utils import batch_iter
-from Sentiment_Analysis.utils import createPreTrainVocab
-from Sentiment_Analysis.bayes import loadDataSet
-from Sentiment_Analysis.bayes import data_split
-from Sentiment_Analysis.bayes import createVocabList
-from Sentiment_Analysis.pretendOF import Regularization
-import Sentiment_Analysis.utils
+# sys.path.append('/home/zdf/fage/nlp-beginer')
+from utils import loadWordEmbedding
+from utils import pad_sents
+from utils import Vocab
+from utils import batch_iter
+from utils import createPreTrainVocab
+from utils import loadDataSet
+from utils import data_split
+from utils import createVocabList
+from pretendOF import Regularization
+import utils
 import csv
 
 class CNN(nn.Module):
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     print("cnn algrithm")
 
     train_data, labels = loadDataSet("./data/train.tsv")
-    test_data, L = loadDataSet('./data/test.tsv', 1)
+    test_data, _ = loadDataSet('./data/test.tsv', 1)
 
     train_x, test_x, train_y, test_y = data_split(train_data, labels, 0.1, 42)
     # 所有文件中最长的评论长度
@@ -148,6 +148,7 @@ if __name__ == "__main__":
     # 使用词表中的所有词
     # vocabListGlove = createPreTrainVocab()
     vocabList = vocabListTrainData | vocabListTestData
+    vocabList = sorted(vocabList)
 
     use_cuda = torch.cuda.is_available()
 

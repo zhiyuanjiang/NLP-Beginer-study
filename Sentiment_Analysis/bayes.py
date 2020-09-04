@@ -3,7 +3,10 @@ from collections import defaultdict
 import re
 import numpy as np
 from tqdm import tqdm
-from sklearn.model_selection import train_test_split
+
+from utils import loadDataSet
+from utils import data_split
+from utils import createVocabList
 
 """
 0 - negative
@@ -16,58 +19,6 @@ from sklearn.model_selection import train_test_split
 """
 score: 0.59219
 """
-
-def textParse(text):
-    # 去除text中的标点，将所有大写字符变成小写字符，分割成单词
-    # punctuation = '!,;:.?'
-    # text = re.sub('[{}]+'.format(punctuation), ' ', text)
-    return text.lower().split()
-
-def loadDataSet(filePath, tick=0):
-    """
-    加载数据
-    :param filePath: 文件路径
-    :return:
-        train_data - list[list[str]], 每个单词都是一个特征
-        labels - list[int], 标签
-    """
-    with open(filePath, 'r') as f:
-        data = csv.reader(f, delimiter='\t')
-        flag = 0
-        train_data = []
-        labels = []
-        # index = set() # 统计最原始的长句，划分后的phrase暂时不统计
-        for it in data:
-            if flag == 0:
-                flag += 1
-                continue
-            # if it[1] in index:
-            #     continue
-            # index.add(it[1])
-            if tick == 0:
-                labels.append(int(it[3]))
-            train_data.append(textParse(it[2]))
-    return train_data, labels
-
-def data_split(data, labels, test_size, random_state):
-    # 将data划分为train data and test data, 划分下标
-    m = len(labels)
-    X = [i for i in range(m)]
-    train_index,  test_index = train_test_split(X, test_size=test_size, random_state=random_state)
-    train_x = [data[i] for i in train_index]
-    train_y = [labels[i] for i in train_index]
-    test_x = [data[i] for i in test_index]
-    test_y = [labels[i] for i in test_index]
-    return train_x, test_x, train_y, test_y
-
-def createVocabList(dataSet):
-    # 使用train data创建一个词表，所有的特征
-    vocabList = set() # 词表
-    print('create vocab list')
-    for id, data in tqdm(enumerate(dataSet)):
-        vocabList = vocabList|set(data)
-    # return list(vocabList)
-    return vocabList
 
 def bagOfWord2Vec(vocabList, inputSet):
     # 获取文档向量，使用词袋模型（单词重复统计）
