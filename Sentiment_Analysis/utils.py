@@ -95,7 +95,10 @@ class Vocab(object):
         """
         word_ids = self.words2indices(sents)
         sents_t = pad_sents(word_ids, self.word2id['<unk>'], max_sent_len)
-        sents_var = torch.tensor(sents_t, dtype=torch.long, device=device)
+        if device is None:
+            sents_var = torch.tensor(sents_t, dtype=torch.long)
+        else:
+            sents_var = torch.tensor(sents_t, dtype=torch.long, device=device)
         return sents_var
 
 

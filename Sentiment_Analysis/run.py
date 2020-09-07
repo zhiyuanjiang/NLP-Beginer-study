@@ -16,40 +16,12 @@ from utils import data_split
 from utils import createVocabList
 from utils import batch_iter_test
 from utils import loss_curve
+from transformer import Transformer
 
-class RNN(nn.Module):
 
-    def __init__(self, embed_size, hidden_size, vocabList, device):
-        super(RNN, self).__init__()
-
-        self.vocab = Vocab(vocabList)
-        self.device = device
-        self.embed_size = embed_size
-        self.hidden_size = hidden_size
-        self.model_embeddings = loadWordEmbedding(self.vocab)
-
-        self.lstm = nn.LSTM(embed_size, hidden_size, bidirectional=True)
-        self.classify = nn.Linear(2*hidden_size, 5)
-        self.drop = nn.Dropout(0.8)
-        self.activate = nn.ReLU()
-
-    def forward(self, data):
-        x = self.vocab.to_input_tensor(data, self.device, -1)
-        x = self.model_embeddings(x)
-
-        x = x.permute(1, 0, 2)   # (seq_len, batch, input_size)
-        # rnn, lstm
-        x, (_, _) = self.lstm(x) # x: (seq_len, batch, num_direction*hidden_size)
-        x = self.activate(x)
-        x = x.permute(1, 2, 0) # x: (batch, num_direction*hidden_size, seq_len)
-
-        # max pooling
-        x = torch.max(x, dim=2)[0]
-        # dropout prevent overfitting
-        x = self.drop(x)
-        # fulling connection
-        x = self.classify(x)
-        return F.log_softmax(x, dim=1)
+"""
+运行transformer
+"""
 
 def loss_func(output, target, reduction='mean'):
     return F.nll_loss(output, target, reduction=reduction)
@@ -131,7 +103,7 @@ def kaggleTest(model, filePath):
     print("the amount of data is : ", cnt)
 
 def main():
-    print("rnn algorithm")
+    print("transformer algorithm")
     train_data, labels = loadDataSet("./data/train.tsv")
     test_data, _ = loadDataSet('./data/test.tsv', 1)
 
@@ -156,13 +128,18 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
 
     batch = 64
-    epoch = 8
+    epoch = 16
     embed_size = 100
-    hidden_size = 50
+    hidden_size = 100
+    n_layers = 3
+    n_heads = 4
+    pf_dim = 256
+    dropout = 0.1
 
-    model = RNN(embed_size, hidden_size, vocabList, device).to(device)
+    model = Transformer(embed_size, hidden_size,
+                        n_layers, n_heads, pf_dim, dropout, device, vocabList).to(device)
 
-    optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
     flag = 0
     if flag == 0:
